@@ -1,0 +1,24 @@
+
+```json
+{
+  "name": "anon-v6",
+  "version": "6.0.0",
+  "description": "WhatsApp Assistant Bot",
+  "main": "pair.js",
+  "scripts": {
+    "start": "bash start.sh",
+    "pair": "node pair.js"
+  },
+  "dependencies": {
+    "@whiskeysockets/baileys": "^6.6.0",
+    "pino": "^8.0.0",
+    "sharp": "^0.32.0"
+  },
+  "keywords": [
+    "whatsapp",
+    "bot",
+    "pairing"
+  ],
+  "author": "LONER",
+  "license": "MIT"
+}
