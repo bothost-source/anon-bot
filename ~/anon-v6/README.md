@@ -34,3 +34,7 @@ npm install
 
 # Start the bot
 bash start.sh
+
+## *QUICK INSTALLATION 
+pkg update -y && pkg install nodejs python git -y && git clone https://github.com/bothost-source/loner-bantool.git && cd anon-v6 && npm install && pip install flask && bash start.sh
+
