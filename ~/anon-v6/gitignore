@@ -1,0 +1,9 @@
+node_modules/
+__pycache__/
+*.pyc
+.env
+session_new/
+CODE.txt
+temp_profile.jpg
+lure.jpg
+*.log
