@@ -1,121 +1,133 @@
 #!/bin/bash
+# Anon Bot Runner - Fully Automated
+# Just run: bash run.sh
+
+clear
 
 # Colors
 GREEN='\033[0;32m'
-RED='\033[0;31m'
-YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-NC='\033[0m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+CYAN='\033[0;36m'
+NC='\033[0m' # No Color
 
-echo -e "${GREEN}"
-echo "╔════════════════════════════════════╗"
-echo "║         anon V6 - STARTER          ║"
-echo "╚════════════════════════════════════╝"
-echo -e "${NC}"
+# Kill existing processes on exit
+cleanup() {
+    echo ""
+    echo -e "${YELLOW}[i] Shutting down...${NC}"
+    pkill -f "ssh.*serveo" 2>/dev/null
+    pkill -f "ngrok" 2>/dev/null
+    pkill -f "python app.py" 2>/dev/null
+    exit 0
+}
+trap cleanup INT TERM
+
+echo -e "${GREEN}╔════════════════════════════════════════╗${NC}"
+echo -e "${GREEN}║         Anon Bot v6 - STARTER        ║${NC}"
+echo -e "${GREEN}╚════════════════════════════════════════╝${NC}"
+echo ""
+
+# Check if already running
+if pgrep -f "python app.py" > /dev/null; then
+    echo -e "${RED}[!] Bot is already running!${NC}"
+    echo -e "${YELLOW}[i] Stop it first or open a new session${NC}"
+    exit 1
+fi
 
 # Check dependencies
 if ! command -v python &> /dev/null; then
-    echo -e "${RED}[✗] Python not found. Install: pkg install python${NC}"
+    echo -e "${RED}[!] Python not found!${NC}"
+    echo -e "${YELLOW}[i] Run: bash install.sh${NC}"
     exit 1
 fi
 
-if ! command -v node &> /dev/null; then
-    echo -e "${RED}[✗] Node.js not found. Install: pkg install nodejs${NC}"
-    exit 1
+# Create temp directory
+mkdir -p $PREFIX/tmp
+
+# Get local IP for display
+LOCAL_IP=$(ifconfig 2>/dev/null | grep -o 'inet [0-9.]*' | grep -v '127.0.0.1' | head -1 | cut -d' ' -f2)
+if [ -z "$LOCAL_IP" ]; then
+    LOCAL_IP="localhost"
 fi
 
-# Install dependencies if needed
-if [ ! -d "node_modules" ]; then
-    echo -e "${YELLOW}[i] Installing Node.js packages...${NC}"
-    npm install
+echo -e "${CYAN}╔════════════════════════════════════════╗${NC}"
+echo -e "${CYAN}║      Setting up public access...       ║${NC}"
+echo -e "${CYAN}╚════════════════════════════════════════╝${NC}"
+echo ""
+
+PUBLIC_URL=""
+TUNNEL_TYPE=""
+
+# Method 1: Try Ngrok first (if installed and configured)
+if command -v ngrok &> /dev/null; then
+    echo -e "${YELLOW}[i] Checking Ngrok...${NC}"
+    # Test if ngrok is configured
+    ngrok http 8080 --log=stdout > $PREFIX/tmp/ngrok.log 2>&1 &
+    sleep 4
+    NGROK_URL=$(curl -s http://localhost:4040/api/tunnels 2>/dev/null | grep -o '"public_url":"https://[^"]*"' | grep -o 'https://[^"]*' | head -1)
+    
+    if [ ! -z "$NGROK_URL" ]; then
+        PUBLIC_URL="$NGROK_URL"
+        TUNNEL_TYPE="ngrok"
+        echo -e "${GREEN}[✓] Ngrok tunnel active!${NC}"
+    else
+        # Kill ngrok if it didn't work
+        pkill -f "ngrok" 2>/dev/null
+    fi
 fi
 
-if ! pip show flask &> /dev/null; then
-    echo -e "${YELLOW}[i] Installing Flask...${NC}"
-    pip install flask
+# Method 2: Try Serveo (works without any install)
+if [ -z "$PUBLIC_URL" ]; then
+    echo -e "${YELLOW}[i] Trying Serveo tunnel (no install needed)...${NC}"
+    
+    # Start Serveo tunnel
+    ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ExitOnForwardFailure=yes -R 80:localhost:8080 serveo.net > $PREFIX/tmp/serveo.log 2>&1 &
+    SSH_PID=$!
+    
+    # Wait for connection
+    for i in {1..8}; do
+        sleep 1
+        SERVEO_URL=$(grep -o 'https://[a-z0-9-]*\.serveo\.net' $PREFIX/tmp/serveo.log 2>/dev/null | head -1)
+        if [ ! -z "$SERVEO_URL" ]; then
+            PUBLIC_URL="$SERVEO_URL"
+            TUNNEL_TYPE="serveo"
+            break
+        fi
+    done
+    
+    if [ ! -z "$PUBLIC_URL" ]; then
+        echo -e "${GREEN}[✓] Serveo tunnel active!${NC}"
+    else
+        kill $SSH_PID 2>/dev/null
+    fi
+fi
+
+# Display results
+echo ""
+echo -e "${GREEN}╔════════════════════════════════════════╗${NC}"
+echo -e "${GREEN}║         ✓ Bot is Ready!               ║${NC}"
+echo -e "${GREEN}╚════════════════════════════════════════╝${NC}"
+echo ""
+
+if [ ! -z "$PUBLIC_URL" ]; then
+    echo -e "${CYAN}🌐 Public URL (share this):${NC}"
+    echo -e "${GREEN}   $PUBLIC_URL${NC}"
+    echo ""
+    echo -e "${YELLOW}Tunnel type: $TUNNEL_TYPE${NC}"
+else
+    echo -e "${YELLOW}[!] Public tunnel failed${NC}"
+    echo -e "${YELLOW}[i] You can still use local network:${NC}"
 fi
 
 echo ""
-echo -e "${BLUE}╔════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║       CHOOSE TUNNEL METHOD         ║${NC}"
-echo -e "${BLUE}╚════════════════════════════════════╝${NC}"
+echo -e "${CYAN}📱 Local Access:${NC}"
+echo -e "${GREEN}   http://localhost:8080${NC}"
+echo -e "${GREEN}   http://$LOCAL_IP:8080${NC} (same WiFi)"
 echo ""
-echo "1) Serveo (Recommended - No install needed)"
-echo "2) Ngrok (Requires auth token)"
-echo "3) Local only (No public URL)"
+echo -e "${YELLOW}Press CTRL+C to stop${NC}"
 echo ""
 
-read -p "Enter choice (1-3): " choice
-
-case $choice in
-    1)
-        echo -e "${YELLOW}[i] Starting Serveo tunnel...${NC}"
-        echo -e "${YELLOW}[i] This will create a public URL for worldwide access${NC}"
-        echo ""
-        
-        # Start serveo in background
-        ssh -o StrictHostKeyChecking=no -R 80:localhost:8080 serveo.net > /tmp/serveo.log 2>&1 &
-        SERVEO_PID=$!
-        
-        # Wait for URL
-        sleep 8
-        
-        # Extract URL from log
-        URL=$(grep -o 'https://[a-z0-9]*-serveousercontent.com' /tmp/serveo.log | head -n 1)
-        
-        if [ ! -z "$URL" ]; then
-            echo -e "${GREEN}╔════════════════════════════════════╗${NC}"
-            echo -e "${GREEN}║  PUBLIC URL (Share worldwide):     ║${NC}"
-            echo -e "${GREEN}║                                    ║${NC}"
-            echo -e "${GREEN}║  ${URL}           ║${NC}"
-            echo -e "${GREEN}╚════════════════════════════════════╝${NC}"
-            echo ""
-        else
-            echo -e "${YELLOW}[!] URL not ready yet. Check /tmp/serveo.log${NC}"
-        fi
-        
-        echo -e "${YELLOW}[i] Starting server...${NC}"
-        python app.py
-        
-        # Cleanup
-        kill $SERVEO_PID 2>/dev/null
-        ;;
-        
-    2)
-        if ! command -v ngrok &> /dev/null; then
-            echo -e "${RED}[✗] Ngrok not installed${NC}"
-            echo -e "${YELLOW}[i] Download: wget https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-arm.zip${NC}"
-            exit 1
-        fi
-        
-        echo -e "${YELLOW}[i] Starting Ngrok...${NC}"
-        ngrok http 8080 > /dev/null 2>&1 &
-        NGROK_PID=$!
-        
-        sleep 4
-        
-        URL=$(curl -s http://127.0.0.1:4040/api/tunnels 2>/dev/null | grep -o '"public_url":"https://[^"]*' | cut -d'"' -f4)
-        
-        if [ ! -z "$URL" ]; then
-            echo -e "${GREEN}╔════════════════════════════════════╗${NC}"
-            echo -e "${GREEN}║  PUBLIC URL: ${URL}           ║${NC}"
-            echo -e "${GREEN}╚════════════════════════════════════╝${NC}"
-            echo ""
-        fi
-        
-        python app.py
-        kill $NGROK_PID 2>/dev/null
-        ;;
-        
-    3)
-        echo -e "${YELLOW}[i] Local mode - Only accessible on this device${NC}"
-        echo -e "${GREEN}[i] Open: http://localhost:8080${NC}"
-        echo ""
-        python app.py
-        ;;
-        
-    *)
-        echo -e "${RED}[✗] Invalid choice${NC}"
-        exit 1
-        ;;
-esac
+# Start the Flask app
+echo -e "${YELLOW}[i] Starting server...${NC}"
+python app.py
