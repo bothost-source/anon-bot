@@ -7,6 +7,7 @@ const {
     delay
 } = require("@whiskeysockets/baileys"); 
 const pino = require("pino");
+const Jimp = require("jimp");
 const fs = require("fs");
 const https = require("https");
 
