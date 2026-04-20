@@ -1,5 +1,6 @@
 import subprocess
 import os
+os.makedirs('./session_new', exist_ok=True)
 import time
 import re
 import threading
@@ -402,6 +403,8 @@ def home():
     )
 
 if __name__ == '__main__':
+    import os
+    port = int(os.environ.get('PORT', 8080))
     print("[i] anon V6 started")
-    print("[i] Access at: http://localhost:8080")
-    app.run(host='0.0.0.0', port=8080, debug=False, threaded=True)
+    print(f"[i] Access at: http://localhost:{port}")
+    app.run(host='0.0.0.0', port=port, debug=False, threaded=True)
