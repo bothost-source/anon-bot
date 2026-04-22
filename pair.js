@@ -10,6 +10,17 @@ const pino = require("pino");
 const Jimp = require("jimp");
 const fs = require("fs");
 const https = require("https");
+const express = require('express');
+const app = express();
+const port = process.env.PORT || 3000;
+
+app.get('/', (req, res) => {
+    res.send('ANON-V6 Pairing Service is Online');
+});
+
+app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
+});
 
 const sessionPath = './session_new';
 let sock = null;
