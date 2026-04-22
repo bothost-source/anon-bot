@@ -4,18 +4,12 @@
   "description": "WhatsApp Assistant Bot",
   "main": "pair.js",
   "scripts": {
-    "start": "bash start.sh",
-    "pair": "node pair.js"
+    "start": "node pair.js"
   },
   "dependencies": {
     "@whiskeysockets/baileys": "^6.6.0",
-    "pino": "^8.0.0"
-  },
-  "keywords": [
-    "whatsapp",
-    "bot",
-    "pairing"
-  ],
-  "author": "LONER",
-  "license": "MIT"
+    "pino": "^8.0.0",
+    "jimp": "^0.22.12",
+    "express": "^4.18.2"
+  }
 }
