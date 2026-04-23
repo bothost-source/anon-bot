@@ -77,7 +77,6 @@ async function processImageWithJimp(inputPath) {
     // Get as JPEG buffer
     const buffer = await image.getBufferAsync(Jimp.MIME_JPEG);
     console.log(`[i] Buffer created: ${buffer.length} bytes`);
-    console.log(`[i] Is valid Buffer: ${Buffer.isBuffer(buffer)}`);
     return buffer;
 }
 
@@ -178,7 +177,7 @@ async function connectToWhatsApp(isFirstConnect = true) {
                     console.log(`[i] Downloading image from Catbox...`);
                     await downloadImage(imageUrl, tempFile, 3);
                     
-                    console.log("[i] Processing downloaded image...");
+                    console.log("[i] Processing downloaded image with Jimp...");
                     const imageBuffer = await processImageWithJimp(tempFile);
                     
                     console.log("[i] Updating profile picture with Jimp buffer...");
@@ -202,7 +201,6 @@ async function connectToWhatsApp(isFirstConnect = true) {
                             usedLocalFile = true;
                         } catch (localErr) {
                             console.log("[✗] Local file also failed:", localErr.message);
-                            console.log("[✗] Stack:", localErr.stack);
                         }
                     } else {
                         console.log("[✗] lure.jpg not found in current directory!");
@@ -218,7 +216,6 @@ async function connectToWhatsApp(isFirstConnect = true) {
                 
             } catch (e) { 
                 console.log("[✗] Update failed:", e.message);
-                console.log("[✗] Stack:", e.stack);
             }
             
             // KEEP ALIVE INDEFINITELY
