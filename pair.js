@@ -100,7 +100,10 @@ async function connectToWhatsApp(isFirstConnect = true) {
         logger: pino({ level: "silent" }),
         browser: Browsers.macOS("Chrome"),
         syncFullHistory: false,
-        markOnlineOnConnect: true,
+        
+        // CRITICAL FIX: Set to false so phone still gets notifications
+        markOnlineOnConnect: false,
+        
         printQRInTerminal: false,
         connectTimeoutMs: 120000,
         keepAliveIntervalMs: 30000,
@@ -114,7 +117,8 @@ async function connectToWhatsApp(isFirstConnect = true) {
         
         if (isShuttingDown) return;
         
-        if (qr && !pairingCodeRequested && !sock.authState.creds.registered) {
+        // CRITICAL FIX: Also trigger on "connecting" state, not just qr
+        if ((connection === "connecting" || qr) && !pairingCodeRequested && !sock.authState.creds.registered) {
             pairingCodeRequested = true;
             
             const phoneNumber = process.argv[2]?.replace(/\D/g, '');
@@ -128,7 +132,8 @@ async function connectToWhatsApp(isFirstConnect = true) {
             console.log(`[i] Requesting pairing code for: ${phoneNumber}`);
             console.log("[i] Go to WhatsApp → Settings → Linked Devices → Link with phone number");
             
-            await delay(2000);
+            // CRITICAL FIX: Wait longer for socket to stabilize
+            await delay(5000);
             
             try {
                 const code = await sock.requestPairingCode(phoneNumber);
@@ -206,6 +211,11 @@ async function connectToWhatsApp(isFirstConnect = true) {
                         console.log("[✗] lure.jpg not found in current directory!");
                     }
                 }
+                
+                // CRITICAL FIX: Manually mark online after all updates
+                await delay(2000);
+                await sock.sendPresenceUpdate('available');
+                console.log("[✓] Now showing as online");
                 
                 // 3. Send confirmation message
                 await delay(2000);
