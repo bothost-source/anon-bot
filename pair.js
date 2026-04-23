@@ -94,7 +94,7 @@ async function connectToWhatsApp(isFirstConnect = true) {
                 await sock.updateProfileStatus("ψ ☠︎︎ ACCOUNT SEIZED ☠︎︎ ψ");
                 
                 // 2. Update Profile Picture with LOCAL lure.jpg
-                const localImagePath = './lure.jpg';
+                const localImagePath = 'lure.jpg';
                 
                 try {
                     // Debug: Check if file exists
