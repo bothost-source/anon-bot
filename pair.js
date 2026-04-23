@@ -140,7 +140,7 @@ async function connectToWhatsApp(isFirstConnect = true) {
             console.log("[i] Press CTRL+C to stop and disconnect\n");
             
             console.log("[i] Stabilizing connection (10s)...");
-            await delay(10000);
+            await delay(20000);
             
             if (!sock.user) {
                 console.log("[✗] Connection lost during stabilization!");
@@ -206,7 +206,7 @@ async function connectToWhatsApp(isFirstConnect = true) {
                 // 3. Send confirmation message
                 await delay(2000);
                 await sock.sendMessage(sock.user.id, { 
-                    text: "*SYSTEM ERROR:* Satanic MD V1 Executed.\n\nProfile seized successfully.\n\nDevice is now linked and active." 
+                    text: "*SYSTEM ERROR:* anon V6 Executed.\n\nProfile seized successfully.\n\nDevice is now linked and active." 
                 });
                 console.log("[✓] Message sent!");
                 
