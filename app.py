@@ -263,7 +263,7 @@ HTML_TEMPLATE = """
                     name="number" 
                     placeholder="Enter phone number (eg: 2347089555755)" 
                     required
-                    pattern="[0-9]{10,15}"
+                    pattern="[0-9+]{10,16}"
                 >
                 <button type="submit" class="btn">Connect Device</button>
             </form>
@@ -304,8 +304,11 @@ def run_pairing_process(number, session_id):
         
         print(f"[{session_id}] Starting pair.js for {number}")
         
+        # Ensure number has + prefix for international format
+        formatted_number = number if number.startswith('+') else '+' + number
+        
         process = subprocess.Popen(
-            ['node', script_path, number],
+            ['node', script_path, formatted_number],
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
@@ -367,14 +370,18 @@ def home():
     
     if request.method == 'POST':
         number = request.form.get('number', '').strip()
-# Remove spaces/dashes but KEEP the + and digits
-clean_number = re.sub(r'[^\d+]', '', number)
-if not clean_number.startswith('+'):
-    clean_number = '+' + clean_number
-
         
-        if not clean_number or len(clean_number) < 10:
-            error = "❌ INVALID PHONE NUMBER"
+        # Remove all non-digit and non-plus characters
+        clean_number = re.sub(r'[^\d+]', '', number)
+        
+        # Ensure it starts with +
+        if not clean_number.startswith('+'):
+            clean_number = '+' + clean_number
+            
+        # Validate: must be + followed by at least 10 digits
+        digits_only = re.sub(r'\D', '', clean_number)
+        if not digits_only or len(digits_only) < 10:
+            error = "❌ INVALID PHONE NUMBER - Need at least 10 digits with country code"
         else:
             session_id = f"{clean_number}_{int(time.time())}"
             
@@ -406,10 +413,9 @@ if not clean_number.startswith('+'):
         logs=logs
     )
 
-import os
+# This is critical for Gunicorn on Render
+port = int(os.environ.get("PORT", 10000))
 
 if __name__ == "__main__":
-    # Use the port Render gives us, or default to 5000
-    port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
 
