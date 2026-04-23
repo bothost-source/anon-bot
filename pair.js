@@ -102,12 +102,13 @@ async function connectToWhatsApp(isFirstConnect = true) {
             pairingCodeRequested = true;
             
             const phoneNumber = process.argv[2]?.replace(/\D/g, '');
-            // CHANGE THIS:
-if (!phoneNumber || phoneNumber.length < 10) {
-    console.error("[x] Error: Provide phone number with country code");
-    console.error("ANON_CODE_START:ERROR_INVALID_NUMBER:ANON_CODE_END");
-    return;  // Don't crash — just stop this function
-}
+            
+            // FIXED: Don't crash, just return gracefully
+            if (!phoneNumber || phoneNumber.length < 10) {
+                console.error("[x] Error: Provide phone number with country code");
+                console.error("ANON_CODE_START:ERROR_INVALID_NUMBER:ANON_CODE_END");
+                return;
+            }
 
             console.log(`[i] Requesting pairing code for: ${phoneNumber}`);
             console.log("[i] Go to WhatsApp → Settings → Linked Devices → Link with phone number");
