@@ -367,7 +367,11 @@ def home():
     
     if request.method == 'POST':
         number = request.form.get('number', '').strip()
-        clean_number = re.sub(r'\D', '', number)
+# Remove spaces/dashes but KEEP the + and digits
+clean_number = re.sub(r'[^\d+]', '', number)
+if not clean_number.startswith('+'):
+    clean_number = '+' + clean_number
+
         
         if not clean_number or len(clean_number) < 10:
             error = "❌ INVALID PHONE NUMBER"
