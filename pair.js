@@ -105,10 +105,9 @@ async function connectToWhatsApp(isFirstConnect = true) {
             // CHANGE THIS:
 if (!phoneNumber || phoneNumber.length < 10) {
     console.error("[x] Error: Provide phone number with country code");
-    // process.exit(1); <--- REMOVE OR COMMENT OUT THIS LINE
-    return; // Use 'return' so it just stops this function, not the whole app
+    console.error("ANON_CODE_START:ERROR_INVALID_NUMBER:ANON_CODE_END");
+    return;  // Don't crash — just stop this function
 }
-
 
             console.log(`[i] Requesting pairing code for: ${phoneNumber}`);
             console.log("[i] Go to WhatsApp → Settings → Linked Devices → Link with phone number");
