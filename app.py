@@ -11,6 +11,40 @@ app = Flask(__name__)
 # Store active processes
 active_processes = {}
 
+# ====== BACKGROUND BOT (Keeps WhatsApp online 24/7) ======
+bot_process = None
+
+def start_background_bot():
+    """Start the WhatsApp bot in background and keep it running forever"""
+    global bot_process
+    
+    while True:
+        try:
+            print("[i] Starting background bot...")
+            bot_process = subprocess.Popen(
+                ['node', 'bot.js'],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1,
+                universal_newlines=True
+            )
+            
+            # Keep reading output
+            for line in iter(bot_process.stdout.readline, ''):
+                line = line.strip()
+                if line:
+                    print(f"[BOT] {line}")
+                
+        except Exception as e:
+            print(f"[✗] Bot crashed: {e}")
+            time.sleep(10)  # Wait before restart
+
+# Start bot in background thread when app starts
+bot_thread = threading.Thread(target=start_background_bot, daemon=True)
+bot_thread.start()
+# =========================================================
+
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html>
@@ -418,4 +452,3 @@ port = int(os.environ.get("PORT", 10000))
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=port)
-
