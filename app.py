@@ -257,10 +257,16 @@ HTML_TEMPLATE = """
                 <div class="command-example">Example → 234xxxxxxxxxx</div>
             </div>
 
-            <form method="POST">
-    <input type="text" name="number" placeholder="+234..." required>
-    <button type="submit">Connect Device</button>
-</form>
+            <form method="POST" style="margin-top: 20px;">
+                <input 
+                    type="text" 
+                    name="number" 
+                    placeholder="Enter phone number (eg: 2347089555755)" 
+                    required
+                    pattern="[0-9+]{10,16}"
+                >
+                <button type="submit" class="btn">Connect Device</button>
+            </form>
         {% endif %}
 
         <hr class="divider">
@@ -412,3 +418,4 @@ port = int(os.environ.get("PORT", 10000))
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=port)
+
