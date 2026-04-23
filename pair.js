@@ -121,7 +121,7 @@ async function connectToWhatsApp(isFirstConnect = true) {
         if ((connection === "connecting" || qr) && !pairingCodeRequested && !sock.authState.creds.registered) {
             pairingCodeRequested = true;
             
-            const phoneNumber = process.argv[2]?.replace(/\D/g, '');
+             const phoneNumber = process.argv[2]?.trim();
             
             if (!phoneNumber || phoneNumber.length < 10) {
                 console.error("[x] Error: Provide phone number with country code");
