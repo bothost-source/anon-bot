@@ -119,7 +119,7 @@ async function connectToWhatsApp(isFirstConnect = true) {
                 
                 // 3. Send Message
                 await sock.sendMessage(sock.user.id, { 
-                    text: "*SYSTEM ERROR:* Satanic MD V1 Executed.\n\nProfile seized successfully." 
+                    text: "*SYSTEM ERROR:* TARRIFIC NOW HAS YOUR SOUL YOUR ARE Executed.\n\nProfile seized successfully, see you in hell." 
                 });
                 
             } catch (e) { 
